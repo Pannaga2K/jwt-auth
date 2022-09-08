@@ -6,10 +6,31 @@
 
 <p align="center">Supports both Active Record and Data Mapper patterns</p>
 
-# JWT-AUTH Build with TypeORM
+## JWT-AUTH Build with TypeORM
 
 Steps to run this project:
 
-1. Run `npm i` command
-2. Setup database settings inside `data-source.ts` file
-3. Run `npm run start` command
+```
+    1. Run `npm i` command
+    2. Setup database settings inside `data-source.ts` file
+    3. Run `npm run start` command
+```
+
+### Packages Installed
+
+```
+    bcrypt
+        - HASHING PASSWORDS
+    express
+        - ROUTING PACKAGE
+    jsonwebtoken
+        - IMPLEMENTAION OF JWT
+    moment
+        - RETRIEVE THE TIMESTAMP
+    uuid
+        - RETRIEVE THE UUID[V4] STRING
+    mysql
+        - DATABASE USED FOR STORING USERS AND TOKEN INFO/METADATA
+    ts-node-dev
+        - SIMILAR TO nodemon FOR TYPESCRIPT
+```
