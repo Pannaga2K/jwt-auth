@@ -7,4 +7,9 @@ export class Hash {
 
         return hashedPassword;
     }
+
+    public static async isPasswordValid(password: string, hashedPassword: string) {
+        return await bcrypt.compare(password, hashedPassword);
+    }
+
 }

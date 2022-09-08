@@ -7,9 +7,12 @@ import { Hash } from "./hash";
 import { AuthenticationDTO } from "./dto/response/authentication.dto";
 import { UserDTO } from "./dto/response/user.dto";
 import { JWT } from "./jwt";
+import { LoginDTO } from "./dto/request/login.dto";
+import { EntityToDTO } from "./util/EntityToDTO";
+
+const userRepository = AppDataSource.getRepository(User);
 
 const app = express();
-
 app.use(express.json());
 
 app.get("/", (req: Request, res: Response) => {
@@ -24,7 +27,7 @@ app.post("/register", async (req: Request, res: Response) => {
             throw new Error("PASSWORD DOES NOT MATCH WITH REPEAT PASSWORD");
         }
 
-        const userRepository = AppDataSource.getRepository(User);
+        
         const user = new User();
         user.username = body.username;
         user.email = body.email;
@@ -32,10 +35,7 @@ app.post("/register", async (req: Request, res: Response) => {
         await userRepository.save(user);
 
         const authenticationDTO: AuthenticationDTO = new AuthenticationDTO();
-        const userDTO: UserDTO = new UserDTO();
-        userDTO.id = user.id;
-        userDTO.username = user.username;
-        userDTO.email = user.email;
+        const userDTO: UserDTO = EntityToDTO.userToDTO(user);
 
         const tokenAndRefreshToken = await JWT.generateTokenAndRefreshToken(user);
         authenticationDTO.user = userDTO;
@@ -47,6 +47,36 @@ app.post("/register", async (req: Request, res: Response) => {
         res.json(err)
     }
 })
+
+app.post("/login", async (req: Request, res: Response) => {
+    
+    try {
+        const body: LoginDTO = req.body;
+        const user = await userRepository.findOneBy({email: body.email});
+        if(!user) {
+            throw new Error("EMAIL DOES NOT EXIST!");
+        }
+    
+        if(!await Hash.isPasswordValid(body.password, user.password)) {
+            throw new Error("INVALID PASSWORD!")
+        }
+
+
+        const {token, refreshToken} = await JWT.generateTokenAndRefreshToken(user);
+        const authenticationDTO = new AuthenticationDTO();
+        authenticationDTO.user = EntityToDTO.userToDTO(user);
+        authenticationDTO.token = token;
+        authenticationDTO.refreshToken = refreshToken;
+
+        res.json(authenticationDTO);
+    } catch(err) {
+        res.status(500).json({
+            message: err.message,
+        })
+    }
+
+    
+});
 
 app.listen(3000, () =>{
     console.log("SERVER HAS STARTED!");

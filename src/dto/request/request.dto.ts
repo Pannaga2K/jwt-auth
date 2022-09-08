@@ -1,6 +1,6 @@
 export class RegisterDTO {
-    username: String;
+    username: string;
     password: string;
-    repeatPassword: String;
-    email: String;
+    repeatPassword: string;
+    email: string;
 }
