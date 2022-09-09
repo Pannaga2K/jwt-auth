@@ -35,4 +35,43 @@ export class JWT {
         return refreshToken.id;
     }
 
+    public static isTokenValid(token: string) {
+        try {
+            jwt.verify(token, this.JWT_SECRET_KEY, {ignoreExpiration: false})
+            return true;
+        } catch(err) {
+            return false;
+        }
+    }
+
+    public static getJwtId(token: string) {
+        const decodedToken = jwt.decode(token);
+        return decodedToken["jti"];
+    }
+
+    public static async isRefreshTokenLinkedToToken(refreshToken: RefreshToken, jwtId: string) {
+        if(!refreshToken) throw new Error("REFRESH TOKEN DOES NOT EXIST!");
+
+        if(refreshToken.jwtId !== jwtId) return false;
+
+        return true;
+    }
+
+    public static async isRefreshTokenExpired(refreshToken: RefreshToken) {
+        if(!refreshToken) throw new Error("REFRESH TOKEN DOES NOT EXIST!");
+
+        if(moment().isAfter(refreshToken.expiryDate)) return true;
+
+        return false;
+    }
+
+    public static async isRefreshTokenUsedOrInvalidated(refreshToken: RefreshToken) {
+        return refreshToken.used || refreshToken.invalidated;
+    }
+
+    public static getJWTPayloadValueById(token: string, key: string) {
+        const decodedToken = jwt.decode(token);
+        return decodedToken[key];
+    }
+
 }

@@ -9,6 +9,8 @@ import { UserDTO } from "./dto/response/user.dto";
 import { JWT } from "./jwt";
 import { LoginDTO } from "./dto/request/login.dto";
 import { EntityToDTO } from "./util/EntityToDTO";
+import { RefreshTokenDTO } from "./dto/request/refreshToken.dto";
+import { RefreshToken } from "./entity/RefreshToken";
 
 const userRepository = AppDataSource.getRepository(User);
 
@@ -27,7 +29,6 @@ app.post("/register", async (req: Request, res: Response) => {
             throw new Error("PASSWORD DOES NOT MATCH WITH REPEAT PASSWORD");
         }
 
-        
         const user = new User();
         user.username = body.username;
         user.email = body.email;
@@ -49,7 +50,6 @@ app.post("/register", async (req: Request, res: Response) => {
 })
 
 app.post("/login", async (req: Request, res: Response) => {
-    
     try {
         const body: LoginDTO = req.body;
         const user = await userRepository.findOneBy({email: body.email});
@@ -60,7 +60,6 @@ app.post("/login", async (req: Request, res: Response) => {
         if(!await Hash.isPasswordValid(body.password, user.password)) {
             throw new Error("INVALID PASSWORD!")
         }
-
 
         const {token, refreshToken} = await JWT.generateTokenAndRefreshToken(user);
         const authenticationDTO = new AuthenticationDTO();
@@ -74,9 +73,66 @@ app.post("/login", async (req: Request, res: Response) => {
             message: err.message,
         })
     }
-
-    
 });
+
+app.post("/refresh/token", async (req: Request, res: Response) => {
+
+    try {
+        const body: RefreshTokenDTO = req.body;
+        // CHECK IF JWT TOKEN IS VALID
+        if(!await JWT.isTokenValid(body.token)) {
+            throw new Error("JWT IS NOT VALID!");
+        }
+        const isTokenValid = JWT.isTokenValid(body.token);
+        const jwtId = JWT.getJwtId(body.token);
+        const user = await userRepository.findOneBy(JWT.getJWTPayloadValueById(body.token, "id"))
+    
+        // CHECK IF THE USER EXISTS
+        if(!user) {
+            throw new Error("USER DOES NOT EXIST!");
+        }
+    
+        // FETCH REFRESH TOKEN FROM DB
+        const refreshTokenRepository = AppDataSource.getRepository(RefreshToken);
+        const refreshToken = await refreshTokenRepository.findOneBy({id: body.refreshToken});
+    
+        // CHECK IF REFRESH TOKEN EXISTS AND IS LINKED TO JWT TOKEN
+        if(!await JWT.isRefreshTokenLinkedToToken(refreshToken, jwtId)) {
+            throw new Error("TOKEN DOES NOT MATCH WITH REFRESH TOKEN!");
+        }
+    
+        // CHECK IF THE REFRESH TOKEN IS ALREADY EXPIRED
+        if(await JWT.isRefreshTokenExpired(refreshToken)) {
+            throw new Error("REFRESH TOKEN HAS EXPIRED!");
+        }
+    
+        // CHECK IF REFRESH TOKEN WAS USED OR INVALIDATED
+        if(await JWT.isRefreshTokenUsedOrInvalidated(refreshToken)) {
+            throw new Error("REFRESH TOKEN HAS BEEN USED OR INVALIDATED");
+        }
+    
+        refreshToken.used = true;
+    
+        await refreshTokenRepository.save(refreshToken);
+    
+        // GENERATE FRESH TOKEN AND REFRESH TOKEN
+        const tokenResults = await JWT.generateTokenAndRefreshToken(user)
+    
+        // GENERATE AN AUTHENTICATION RESPONSE
+        const authenticationDTO: AuthenticationDTO = new AuthenticationDTO();
+        authenticationDTO.user = EntityToDTO.userToDTO(user);
+        authenticationDTO.token = tokenResults.token;
+        authenticationDTO.refreshToken = tokenResults.refreshToken;
+    
+        res.json(authenticationDTO);
+        return authenticationDTO;
+    } catch(err) {
+        res.status(500).json({
+            message: err.message,
+        })
+    }
+    
+})
 
 app.listen(3000, () =>{
     console.log("SERVER HAS STARTED!");
