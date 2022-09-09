@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://typeorm.io/" target="blank"><img src="https://github.com/typeorm/typeorm/raw/master/resources/logo_big.png" width="320" alt="Nest Logo" /></a>
+  <a href="https://typeorm.io/" target="_blank"><img src="https://github.com/typeorm/typeorm/raw/master/resources/logo_big.png" width="320" alt="Nest Logo" /></a>
 </p>
 
 <p align="center">An ORM that can run in NodeJS, Browser, Cordova, PhoneGap, Ionic, React Native, NativeScript, Expo, and Electron platforms and can be used with TypeScript and JavaScript (ES5, ES6, ES7, ES8).</p>
